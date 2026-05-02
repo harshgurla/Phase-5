@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Assistant - All-in-One</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 2.5em;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      transition: transform 0.3s;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+    }
+    .card h2 {
+      color: #333;
+      margin-bottom: 15px;
+      font-size: 1.3em;
+    }
+    .card p {
+      color: #666;
+      margin-bottom: 15px;
+      font-size: 0.9em;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    button:hover {
+      opacity: 0.9;
+      transform: scale(1.02);
+    }
+    button:active {
+      transform: scale(0.98);
+    }
+    .result {
+      margin-top: 15px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      min-height: 80px;
+      display: none;
+      line-height: 1.6;
+    }
+    .result.show {
+      display: block;
+    }
+    .loading {
+      color: #667eea;
+      font-style: italic;
+    }
+    .error {
+      color: #e74c3c;
+    }
+    .mood-selector {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 15px;
+    }
+    .mood-btn {
+      padding: 8px 16px;
+      background: white;
+      border: 2px solid #667eea;
+      color: #667eea;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.3s;
+      width: auto;
+    }
+    .mood-btn:hover, .mood-btn.active {
+      background: #667eea;
+      color: white;
+    }
+    .journal-card {
+      grid-column: span 2;
+    }
+    @media (max-width: 768px) {
+      .journal-card {
+        grid-column: span 1;
+      }
+      h1 {
+        font-size: 2em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🤖 AI Assistant</h1>
+    
+    <div class="grid">
+      <!-- Fun Facts Card -->
+      <div class="card">
+        <h2>🧠 Fun Facts</h2>
+        <p>Get interesting random facts</p>
+        <button onclick="getFunFact()">Get Fun Fact</button>
+        <div class="result" id="factResult"></div>
+      </div>
+
+      <!-- Joke Card -->
+      <div class="card">
+        <h2>😂 Jokes</h2>
+        <p>Lighten your mood with humor</p>
+        <button onclick="getJoke()">Get a Joke</button>
+        <div class="result" id="jokeResult"></div>
+      </div>
+
+      <!-- Motivation Card -->
+      <div class="card">
+        <h2>💪 Motivation</h2>
+        <p>Get inspired with quotes</p>
+        <button onclick="getMotivation()">Get Motivated</button>
+        <div class="result" id="motivationResult"></div>
+      </div>
+
+      <!-- Tip of the Day Card -->
+      <div class="card">
+        <h2>💡 Daily Tips</h2>
+        <p>Helpful productivity tips</p>
+        <button onclick="getTip()">Get Today's Tip</button>
+        <div class="result" id="tipResult"></div>
+      </div>
+
+      <!-- Journal Prompter Card -->
+      <div class="card journal-card">
+        <h2>📔 Journal Prompter</h2>
+        <p>Get personalized journal prompts based on your mood</p>
+        <div class="mood-selector">
+          <button class="mood-btn" onclick="selectMood('happy', this)">😊 Happy</button>
+          <button class="mood-btn" onclick="selectMood('stressed', this)">😰 Stressed</button>
+          <button class="mood-btn" onclick="selectMood('curious', this)">🤔 Curious</button>
+          <button class="mood-btn" onclick="selectMood('sad', this)">😢 Sad</button>
+          <button class="mood-btn" onclick="selectMood('motivated', this)">🔥 Motivated</button>
+          <button class="mood-btn" onclick="selectMood('anxious', this)">😟 Anxious</button>
+        </div>
+        <button onclick="getJournalPrompt()">Get Journal Prompt</button>
+        <div class="result" id="journalResult"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '/api';
+    let selectedMood = null;
+
+    async function fetchData(endpoint, method = 'GET', body = null) {
+      const options = {
+        method,
+        headers: { 'Content-Type': 'application/json' }
+      };
+      if (body) options.body = JSON.stringify(body);
+
+      const response = await fetch(`${API_URL}${endpoint}`, options);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.json();
+    }
+
+    function showResult(elementId, content, isLoading = false, isError = false) {
+      const element = document.getElementById(elementId);
+      element.classList.add('show');
+      
+      if (isLoading) {
+        element.innerHTML = `<span class="loading">${content}</span>`;
+      } else if (isError) {
+        element.innerHTML = `<span class="error">${content}</span>`;
+      } else {
+        element.innerHTML = content;
+      }
+    }
+
+    async function getFunFact() {
+      showResult('factResult', '⏳ Generating fun fact...', true);
+      try {
+        const data = await fetchData('/fun-fact');
+        showResult('factResult', `💡 ${data.fact}`);
+      } catch (error) {
+        showResult('factResult', `❌ Error: ${error.message}`, false, true);
+      }
+    }
+
+    async function getJoke() {
+      showResult('jokeResult', '⏳ Fetching joke...', true);
+      try {
+        const data = await fetchData('/joke');
+        showResult('jokeResult', `😂 ${data.joke}`);
+      } catch (error) {
+        showResult('jokeResult', `❌ Error: ${error.message}`, false, true);
+      }
+    }
+
+    async function getMotivation() {
+      showResult('motivationResult', '⏳ Getting motivation...', true);
+      try {
+        const data = await fetchData('/motivation');
+        showResult('motivationResult', `💪 ${data.quote}`);
+      } catch (error) {
+        showResult('motivationResult', `❌ Error: ${error.message}`, false, true);
+      }
+    }
+
+    async function getTip() {
+      showResult('tipResult', '⏳ Loading tip...', true);
+      try {
+        const data = await fetchData('/tip-of-the-day');
+        showResult('tipResult', `💡 ${data.tip}`);
+      } catch (error) {
+        showResult('tipResult', `❌ Error: ${error.message}`, false, true);
+      }
+    }
+
+    function selectMood(mood, button) {
+      selectedMood = mood;
+      document.querySelectorAll('.mood-btn').forEach(btn => btn.classList.remove('active'));
+      button.classList.add('active');
+    }
+
+    async function getJournalPrompt() {
+      if (!selectedMood) {
+        showResult('journalResult', '❌ Please select a mood first!', false, true);
+        return;
+      }
+
+      showResult('journalResult', '⏳ Creating your journal prompt...', true);
+      try {
+        const data = await fetchData('/journal-prompt', 'POST', { mood: selectedMood });
+        showResult('journalResult', `✍️ <strong>Your Journal Prompt:</strong><br><br>${data.prompt}`);
+      } catch (error) {
+        showResult('journalResult', `❌ Error: ${error.message}`, false, true);
+      }
+    }
+  </script>
+</body>
+</html>

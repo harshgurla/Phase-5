@@ -1,0 +1,10 @@
+{
+  "rewrites": [
+    { "source": "/fun-fact", "destination": "/api/fun-fact" },
+    { "source": "/journal-prompt", "destination": "/api/journal-prompt" },
+    { "source": "/joke", "destination": "/api/joke" },
+    { "source": "/motivation", "destination": "/api/motivation" },
+    { "source": "/tip-of-the-day", "destination": "/api/tip-of-the-day" },
+    { "source": "/", "destination": "/frontend/index.html" }
+  ]
+}
